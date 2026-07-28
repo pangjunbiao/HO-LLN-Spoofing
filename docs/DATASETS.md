@@ -30,12 +30,21 @@ Do not rename these files unless the corresponding paths are also updated in the
 
 ## 3. Dataset Roles
 
+### Dataset Statistics and Experimental Roles
+
+| Scenario | Samples | Segments | Normal | Spoofed | Role in This Paper |
+|---|---:|---:|---:|---:|---|
+| Dataset-1 | 62,042 | 27 | 46,287 | 15,755 | Model development and controlled comparison |
+| Dataset-2 | 6,890 | 6 | 5,184 | 1,706 | External generalization evaluation |
+| Dataset-3 | 636 | 1 | 231 | 405 | Causal sequential case study |
+
 | File | Role in this repository |
 |---|---|
 | `AV-GPS-Dataset-1.csv` | Main mixed dataset used for source-aware development, validation, and held-out testing |
 | `AV-GPS-Dataset-1-Normal-Data.csv` | Normal-reference data used for normal-behavior statistics; it is not treated as an independent external test dataset |
 | `AV-GPS-Dataset-2.csv` | External/source-shift evaluation dataset |
 | `AV-GPS-Dataset-3.csv` | Online case-study dataset; its EKF detector output is used only for comparison in the dedicated case study |
+
 
 ## 4. Processing Layers
 
