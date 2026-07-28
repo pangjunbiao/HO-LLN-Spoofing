@@ -1,0 +1,202 @@
+dataset:
+  name: "AV-GPS-Dataset"
+  package_type: "one_dataset_package_with_multiple_source_files"
+
+  label_column: "Data Type"
+  normal_label: 0
+  attack_label: 1
+  ekf_column: "EKF Detector"
+
+  add_source_columns: true
+  add_raw_order_column: true
+  pandas_low_memory: false
+
+  raw_files:
+    dataset1:
+      file_name: "AV-GPS-Dataset-1.csv"
+      role: "main_development_mixed"
+      expected_has_label: true
+      expected_has_ekf_detector: false
+
+    dataset1_normal:
+      file_name: "AV-GPS-Dataset-1-Normal-Data.csv"
+      role: "normal_reference_not_independent"
+      expected_has_label: true
+      expected_has_ekf_detector: false
+
+    dataset2:
+      file_name: "AV-GPS-Dataset-2.csv"
+      role: "external_source_shift_test"
+      expected_has_label: true
+      expected_has_ekf_detector: false
+
+    dataset3:
+      file_name: "AV-GPS-Dataset-3.csv"
+      role: "online_case_study_with_ekf"
+      expected_has_label: true
+      expected_has_ekf_detector: true
+
+  core_gnss_columns:
+    - "GPS Latitude"
+    - "GPS Longitude"
+
+  core_motion_columns:
+    - "Velocity (m/s)"
+    - "Heading (deg)"
+    - "Yaw (deg)"
+    - "Yaw Rate (deg/s)"
+    - "Steering Angle (deg)"
+
+  optional_motion_columns:
+    - "Longitudinal Velocity (m/s)"
+    - "Lateral Velocity (m/s)"
+
+  evidence_source_columns:
+    - "GPS Latitude"
+    - "GPS Longitude"
+    - "Velocity (m/s)"
+    - "Heading (deg)"
+    - "Yaw (deg)"
+    - "Yaw Rate (deg/s)"
+    - "Steering Angle (deg)"
+
+  optional_evidence_source_columns:
+    - "Longitudinal Velocity (m/s)"
+    - "Lateral Velocity (m/s)"
+
+  shortcut_columns:
+    - "Clock Date"
+    - "Clock Time"
+    - "GPS MGRS"
+    - "GPS HDOP"
+    - "GPS VDOP"
+    - "Satellite Count"
+    - "Satellite Locks"
+    - "Throttle (%)"
+    - "Longitudinal Vibration"
+    - "Lateral Vibration"
+    - "Vertical Vibration"
+    - "Distance To Home (m)"
+    - "Travelled Distance (m)"
+    - "X-Track Error"
+    - "Mission Index"
+    - "Distance To GCS (m)"
+    - "EKF Detector"
+
+  locked_usage_rules:
+    use_raw_shortcut_features_as_model_input: false
+    proposed_and_baselines_use_xi_only: true
+    dataset1_role: "train_validation_internal_test_after_segmentation"
+    dataset1_normal_role: "normal_reference_diagnostic_only"
+    dataset2_role: "external_source_shift_test"
+    dataset3_role: "online_case_study_with_ekf_baseline"
+
+  segmented_files:
+    dataset1: "dataset1_segmented.csv"
+    dataset1_normal: "dataset1_normal_segmented.csv"
+    dataset2: "dataset2_segmented.csv"
+    dataset3: "dataset3_segmented.csv"
+
+  cleaned_files:
+    dataset1: "dataset1_cleaned.csv"
+    dataset1_normal: "dataset1_normal_cleaned.csv"
+    dataset2: "dataset2_cleaned.csv"
+    dataset3: "dataset3_cleaned.csv"
+
+  physical_files:
+    dataset1: "dataset1_physical.csv"
+    dataset1_normal: "dataset1_normal_physical.csv"
+    dataset2: "dataset2_physical.csv"
+    dataset3: "dataset3_physical.csv"
+
+  residual_files:
+    dataset1: "dataset1_residual.csv"
+    dataset1_normal: "dataset1_normal_residual.csv"
+    dataset2: "dataset2_residual.csv"
+    dataset3: "dataset3_residual.csv"
+
+  segmentation_rules:
+    reset_sequential_states_at_each_segment: true
+    reset_a0: true
+    reset_h0: true
+    reset_v0: true
+    preserve_dataset3_online_sequence: true
+    do_not_split_on_label_change: true
+
+  split_rules:
+    main_development_dataset: "dataset1"
+    split_unit: "segment_id"
+    split_by_rows: false
+    split_by_segments: true
+
+    use_dataset1_for_train_val_test: true
+    use_dataset1_normal_as_supervised_extra_data: false
+    keep_dataset2_for_external_test_only: true
+    keep_dataset3_for_online_case_study_only: true
+
+    prevent_same_segment_in_multiple_splits: true
+    save_segment_metadata: true
+
+  split_files:
+    train_segments: "dataset1_train_segments.json"
+    val_segments: "dataset1_val_segments.json"
+    test_segments: "dataset1_test_segments.json"
+    split_summary: "split_summary.json"
+    segment_metadata: "dataset1_segment_metadata.csv"
+
+  clean_column_rules:
+    cleaned_files_are_not_model_inputs: true
+    cleaned_files_are_for_evidence_construction_only: true
+    final_models_use_xi_only: true
+    baselines_use_xi_only: true
+    raw_shortcut_columns_forbidden_as_model_inputs: true
+    ekf_detector_not_used_as_input: true
+
+  physical_model_rules:
+    physical_files_are_not_model_inputs: true
+    physical_files_are_for_residual_construction_only: true
+    compute_gnss_local_position_per_segment: true
+    compute_gnss_displacement_causally: true
+    compute_motion_displacement_causally: true
+    do_not_use_future_rows: true
+    reset_physical_transitions_at_segment_start: true
+
+  residual_rules:
+    residual_files_are_not_final_model_inputs: true
+    residual_files_are_for_xi_construction_only: true
+    final_nu_combines_step3_and_step6_validity: true
+    residual_formula: "r_t = delta_p_g_t - delta_p_u_t"
+    statistics_from_training_normal_only: true
+    no_validation_test_external_leakage: true
+
+
+  xi_files:
+    dataset1: "dataset1_xi.csv"
+    dataset1_normal: "dataset1_normal_xi.csv"
+    dataset2: "dataset2_xi.csv"
+    dataset3: "dataset3_xi.csv"
+
+  xi_split_files:
+    train: "train_xi.csv"
+    val: "val_xi.csv"
+    test: "test_xi.csv"
+    external: "external_xi.csv"
+    online: "online_xi.csv"
+    normal_reference: "normal_reference_xi.csv"
+
+  xi_rules:
+    xi_is_final_model_input: true
+    proposed_baselines_ablations_use_same_xi: true
+    xi_built_from_residual_files_only: true
+    scaler_fit_on_dataset1_train_only: true
+    validation_test_external_not_used_for_scaler_fit: true
+    dataset2_external_only: true
+    dataset3_online_case_only: true
+
+  flat_array_files:
+    train: "train_flat_xi.npz"
+    val: "val_flat_xi.npz"
+    test: "test_flat_xi.npz"
+    external: "external_flat_xi.npz"
+    online: "online_flat_xi.npz"
+    normal_reference: "normal_reference_flat_xi.npz"

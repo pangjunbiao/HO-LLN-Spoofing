@@ -1,0 +1,204 @@
+baselines:
+  enabled: true
+
+  # Official Step-15 baseline list.
+  # All use exactly the same reconstructed xi_t features as the proposed model.
+  enabled_models:
+    - "xgboost_xi"
+    - "mlp_xi"
+    - "lstm_xi"
+    - "gru_xi"
+    - "tcn_xi"
+
+  # Shared fair feature contract.
+  # Do not add raw GPS, time/date, EKF Detector, or labels here.
+  feature_columns:
+    - "xi_eta_east_scaled"
+    - "xi_eta_north_scaled"
+    - "xi_eta_dot_east_scaled"
+    - "xi_eta_dot_north_scaled"
+    - "xi_eta_ddot_east_scaled"
+    - "xi_eta_ddot_north_scaled"
+    - "xi_q_scaled"
+    - "xi_accum_log_scaled"
+    - "xi_nu"
+
+  forbidden_input_columns:
+    - "Data Type"
+    - "Spoofing"
+    - "is_attack"
+    - "label"
+    - "Label"
+    - "Clock"
+    - "Date"
+    - "Time"
+    - "GPS MGRS"
+    - "GPS Easting"
+    - "GPS Northing"
+    - "GPS Latitude"
+    - "GPS Longitude"
+    - "EKF Detector"
+
+  step15:
+    enabled: true
+    experiment_name: "official_baseline_comparison_step15"
+
+    # reuse_if_exists = train only if checkpoint is missing.
+    # always = retrain every baseline.
+    # never = fail if a baseline checkpoint is missing.
+    retrain_policy: "reuse_if_exists"
+
+    evaluation_splits:
+      - "val"
+      - "test"
+      - "external"
+      - "online"
+
+    comparison_splits:
+      - "test"
+      - "external"
+      - "online"
+
+    save_predictions: true
+    save_json: true
+    save_csv: true
+    print_console_summary: true
+
+  # Shared sequence-window protocol for LSTM, GRU, and TCN baselines.
+  # Same causal xi_t windows as the proposed sequence training protocol.
+  sequence:
+    train_window_length: 256
+    train_stride: 128
+    eval_window_length: 512
+    eval_stride: 512
+    online_full_sequence: true
+
+  xgboost_xi:
+    enabled: true
+    model_name: "XGBoost-xi"
+
+    n_estimators: 250
+    max_depth: 3
+    learning_rate: 0.03
+    subsample: 0.90
+    colsample_bytree: 0.90
+    min_child_weight: 1.0
+    reg_lambda: 1.0
+    reg_alpha: 0.0
+    gamma: 0.0
+
+    objective: "binary:logistic"
+    eval_metric: "logloss"
+    tree_method: "hist"
+
+    n_jobs: 4
+    random_state: 42
+    use_train_class_weight: true
+
+    # Keep false for official run. If xgboost is not installed, install xgboost.
+    allow_sklearn_fallback: false
+
+    output_model_path: "results/models/xgboost_xi.pkl"
+
+  mlp_xi:
+    enabled: true
+    model_name: "MLP-xi"
+
+    hidden_dims: [128, 64]
+    dropout: 0.10
+    activation: "relu"
+    use_layer_norm: false
+
+    batch_size: 512
+    max_epochs: 80
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    gradient_clip_norm: 1.0
+
+    patience: 12
+    min_delta: 0.00001
+
+    use_train_class_weight: true
+    num_workers: 0
+
+    output_model_path: "results/models/mlp_xi.pt"
+    output_history_csv: "results/tables/mlp_xi_training_history.csv"
+    output_summary_json: "results/tables/mlp_xi_training_summary.json"
+
+  lstm_xi:
+    enabled: true
+    model_name: "LSTM-xi"
+
+    hidden_dim: 64
+    num_layers: 1
+    dropout: 0.10
+    bidirectional: false
+
+    batch_size: 16
+    eval_batch_size: 16
+    max_epochs: 80
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    gradient_clip_norm: 1.0
+
+    patience: 12
+    min_delta: 0.00001
+
+    use_train_class_weight: true
+    num_workers: 0
+
+    output_model_path: "results/models/lstm_xi.pt"
+    output_history_csv: "results/tables/lstm_xi_training_history.csv"
+    output_summary_json: "results/tables/lstm_xi_training_summary.json"
+
+  gru_xi:
+    enabled: true
+    model_name: "GRU-xi"
+
+    hidden_dim: 64
+    num_layers: 1
+    dropout: 0.10
+    bidirectional: false
+
+    batch_size: 16
+    eval_batch_size: 16
+    max_epochs: 80
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    gradient_clip_norm: 1.0
+
+    patience: 12
+    min_delta: 0.00001
+
+    use_train_class_weight: true
+    num_workers: 0
+
+    output_model_path: "results/models/gru_xi.pt"
+    output_history_csv: "results/tables/gru_xi_training_history.csv"
+    output_summary_json: "results/tables/gru_xi_training_summary.json"
+
+  tcn_xi:
+    enabled: true
+    model_name: "Causal-TCN-xi"
+
+    channels: [64, 64, 64]
+    kernel_size: 3
+    dropout: 0.10
+    activation: "relu"
+
+    batch_size: 16
+    eval_batch_size: 16
+    max_epochs: 80
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    gradient_clip_norm: 1.0
+
+    patience: 12
+    min_delta: 0.00001
+
+    use_train_class_weight: true
+    num_workers: 0
+
+    output_model_path: "results/models/tcn_xi.pt"
+    output_history_csv: "results/tables/tcn_xi_training_history.csv"
+    output_summary_json: "results/tables/tcn_xi_training_summary.json"

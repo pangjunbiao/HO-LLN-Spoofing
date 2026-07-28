@@ -1,0 +1,45 @@
+# Step 5 only: protocol-controlled GPS-IDS classifier-suite reimplementation.
+#
+# Official command:
+# python -m src.experiments.run_gps_ids_reproduction \
+#   --config-dir configs \
+#   --gps-ids-features-config gps_ids_features.yaml \
+#   --gps-ids-classifiers-config gps_ids_classifiers.yaml
+#
+# Do not add this file to DEFAULT_CONFIG_ORDER.
+
+gps_ids_reproduction:
+  classifier_suite:
+    run_id: "gps_ids_suite_v1_seed42"
+    output_root: "results/extended_comparison/gps_ids_reproduction/classifier_suite"
+
+    # Official run must contain all seven in the published order.
+    models:
+      - "random_forest"
+      - "xgboost"
+      - "svc"
+      - "mlp"
+      - "adaboost"
+      - "gradient_boosting"
+      - "decision_tree"
+
+    # standard = official finite validation search.
+    # smoke = installation test only.
+    search_profile: "standard"
+
+    active_seed: 42
+    training_seed_list: [42]
+
+    # -1 uses all available CPU threads where the estimator supports it.
+    # Change to 1 for stricter single-thread reproducibility.
+    n_jobs: -1
+
+    overwrite: false
+    fail_on_candidate_error: false
+
+    feature_files:
+      train: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_train_features.csv"
+      validation: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_validation_features.csv"
+      test: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_test_features.csv"
+      dataset2: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_dataset2_features.csv"
+      dataset3: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_dataset3_features.csv"

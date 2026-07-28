@@ -1,0 +1,37 @@
+# Step 4 only: GPS-IDS published-method feature reconstruction.
+#
+# Load explicitly with:
+# python -m external_baselines.gps_ids_reproduction.preprocessing \
+#   --config-dir configs --gps-ids-config gps_ids_features.yaml
+#
+# Do not add this YAML to DEFAULT_CONFIG_ORDER.
+
+gps_ids_reproduction:
+  feature_contract:
+    # Step-1 corrected segmented raw files are used because they preserve the
+    # original behavior columns and occur before clean-column pruning.
+    source_files:
+      dataset1: "data/extended_comparison/corrected_evidence_v1/interim/dataset1_segmented.csv"
+      dataset2: "data/extended_comparison/corrected_evidence_v1/interim/dataset2_segmented.csv"
+      dataset3: "data/extended_comparison/corrected_evidence_v1/interim/dataset3_segmented.csv"
+
+    # Existing authoritative Dataset-1 segment assignments, reused read-only.
+    split_files:
+      train: "data/splits/dataset1_train_segments.json"
+      validation: "data/splits/dataset1_val_segments.json"
+      test: "data/splits/dataset1_test_segments.json"
+
+    allowed_data_root: "data/extended_comparison/gps_ids_reproduction"
+    allowed_result_root: "results/extended_comparison/gps_ids_reproduction"
+
+    output_files:
+      train: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_train_features.csv"
+      validation: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_validation_features.csv"
+      test: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_test_features.csv"
+      dataset2: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_dataset2_features.csv"
+      dataset3: "data/extended_comparison/gps_ids_reproduction/features/gps_ids_dataset3_features.csv"
+
+    contract_json: "results/extended_comparison/gps_ids_reproduction/feature_contract/gps_ids_feature_contract.json"
+    mapping_csv: "results/extended_comparison/gps_ids_reproduction/feature_contract/gps_ids_feature_mapping.csv"
+    build_report_json: "results/extended_comparison/gps_ids_reproduction/feature_contract/gps_ids_feature_build_report.json"
+    artifact_index_json: "results/extended_comparison/gps_ids_reproduction/feature_contract/gps_ids_feature_artifact_index.json"

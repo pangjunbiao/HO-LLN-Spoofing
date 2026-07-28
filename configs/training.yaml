@@ -1,0 +1,425 @@
+seed:
+  mode: "single"          # options: single, multi
+  single_seed: 42
+  multi_seeds: [42, 123, 2024, 3407, 777]
+
+  deterministic: true
+  deterministic_warn_only: true
+  benchmark: false
+  cublas_workspace_config: ":4096:8"
+  cuda_tf32: false
+
+device:
+  preference: "cuda"      # options: cuda, cpu, auto
+  gpu_index: 0
+  allow_cpu_fallback: true
+  require_gpu: false
+
+training:
+  split:
+    # Step 4: Dataset-1 segment-level split only.
+    # Dataset-2 and Dataset-3 stay untouched for external/case-study evaluation.
+
+    # Keep both names for backward compatibility with earlier code.
+    train_ratio: 0.70
+    val_ratio: 0.15
+    test_ratio: 0.15
+
+    train_fraction: 0.70
+    val_fraction: 0.15
+    test_fraction: 0.15
+
+    random_seed: 42
+    n_trials: 200
+
+    source_dataset: "dataset1"
+    split_by: "segment_id"
+    split_unit: "segment_id"
+
+    preserve_attack_rate: true
+    require_attack_each_split: true
+    require_normal_each_split: true
+
+    min_segments_train: 1
+    min_segments_val: 1
+    min_segments_test: 1
+
+    prevent_segment_leakage: true
+    dataset1_only_for_main_development: true
+    keep_dataset2_untouched: true
+    keep_dataset3_untouched: true
+    save_outputs: true
+
+  residual_statistics:
+    enabled: true
+
+    # Step 7 leakage protection.
+    statistics_source_dataset: "dataset1"
+    statistics_source_split: "train"
+    statistics_source_label: "normal"
+    statistics_source_validity: "nu == 1"
+
+    forbid_validation_statistics: true
+    forbid_internal_test_statistics: true
+    forbid_external_statistics: true
+    forbid_dataset1_normal_as_independent_training_data: true
+
+    save_train_normal_residual_samples: true
+    save_covariance_matrices: true
+    save_energy_quantiles: true
+
+  step12:
+    enabled: true
+    model_name: "proposed"
+    variant_name: "full"
+    note: "Step 12 trains the selected PyTorch model using the common protocol. It does not select final theta or N_p."
+
+  step13:
+    enabled: true
+    experiment_name: "full_proposed_first_real_experiment"
+    model_name: "Proposed"
+    variant_name: "full"
+
+    train_full_model: true
+    use_existing_step12_checkpoint_if_available: true
+
+    threshold_selection_split: "val"
+    internal_test_split: "test"
+    external_test_split: "external"
+    online_case_split: "online"
+
+    leakage_rules:
+      train_on_dataset1_train_only: true
+      select_threshold_on_dataset1_validation_only: true
+      evaluate_dataset1_test_after_threshold_selection: true
+      dataset2_external_never_tuned: true
+      dataset3_online_never_tuned: true
+      synthetic_step10_theta_not_used: true
+
+  dataset:
+    # Step 9 and Step 12: final dataset objects and sequence batching.
+    enabled: true
+
+    representation: "xi"
+    use_scaled_xi_features: true
+
+    feature_columns:
+      - "xi_eta_east_scaled"
+      - "xi_eta_north_scaled"
+      - "xi_eta_dot_east_scaled"
+      - "xi_eta_dot_north_scaled"
+      - "xi_eta_ddot_east_scaled"
+      - "xi_eta_ddot_north_scaled"
+      - "xi_q_scaled"
+      - "xi_accum_log_scaled"
+      - "xi_nu"
+
+    label_column: "Data Type"
+    validity_column: "xi_nu"
+    segment_column: "segment_id"
+    order_column: "within_segment_index"
+    delta_t_column: "delta_t_seconds"
+
+    xi_split_files:
+      train: "data/processed/train_xi.csv"
+      val: "data/processed/val_xi.csv"
+      test: "data/processed/test_xi.csv"
+      external: "data/processed/external_xi.csv"
+      online: "data/processed/online_xi.csv"
+
+    # Previous Step-9 names.
+    sequence_mode: "fixed_window"
+    train_window_size: 256
+    train_stride: 128
+    eval_window_size: 512
+    eval_stride: 512
+
+    # Step-12 names used by trainer.py.
+    sequence:
+      window_length_train: 256
+      stride_train: 128
+      window_length_eval: 512
+      stride_eval: 512
+      include_last_partial_train: true
+      include_last_partial_eval: true
+      min_valid_rows: 1
+
+    online_full_sequence: true
+
+    # Sequence models keep invalid rows for continuity, but loss ignores them.
+    sequence_loss_valid_only: true
+
+    # Flattened baselines use only valid xi rows.
+    flatten_valid_only: true
+
+    save_flat_arrays: true
+    save_sequence_manifest: true
+
+    fairness_rules:
+      proposed_model_uses_same_xi_as_baselines: true
+      ablations_use_same_xi_as_full_model: true
+      use_same_xi_for_all_models: true
+      use_scaled_xi_only: true
+      xgboost_uses_flattened_xi_only: true
+      mlp_uses_flattened_xi_only: true
+      lstm_gru_tcn_use_sequence_xi_only: true
+      no_raw_shortcut_columns: true
+      no_ekf_detector_input: true
+      preserve_segment_boundaries: true
+      reset_hidden_state_at_segment_start: true
+      preserve_dataset3_online_order: true
+      train_split_only_for_class_weights: true
+      validation_only_for_monitoring: true
+
+  dataloader:
+    # Conservative defaults for RTX 3060 laptop GPU.
+    batch_size_train: 16
+    batch_size_eval: 8
+
+    num_workers: 0
+    pin_memory: true
+
+    drop_last_train: false
+    drop_last_eval: false
+
+    shuffle_train: true
+    shuffle_eval: false
+
+    collate_fn: "collate_sequence_batch"
+    return_delta_t: true
+    return_padding_mask: true
+    return_loss_mask: true
+    return_segment_metadata: true
+
+  state_handling:
+    independent_windows: true
+    carry_hidden_state_across_windows: false
+    reset_state_at_each_window: true
+    reset_state_at_segment_start: true
+    note: "For Step 12 fixed-window training, windows are treated independently to avoid accidental leakage across segments/windows."
+
+  trainer:
+    max_epochs: 30
+    monitor: "val_loss"
+    objective: "minimize_validation_loss"
+    validate_every_n_epochs: 1
+
+  loss:
+    enabled: true
+    name: "weighted_bce"
+    from_logits: true
+    epsilon: 1.0e-12
+    reduction: "mean"
+    normalization: "valid_count"
+    use_loss_mask: true
+    combine_padding_and_loss_mask: true
+
+    class_weights:
+      enabled: true
+      strategy: "balanced"
+      normal_label: 0
+      attack_label: 1
+      manual_alpha_0: null
+      manual_alpha_1: null
+      min_weight: 0.05
+      max_weight: 50.0
+      train_only: true
+      valid_only: true
+
+  optimizer:
+    name: "adamw"
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    betas: [0.9, 0.999]
+    eps: 1.0e-8
+    momentum: 0.9
+    nesterov: false
+    rmsprop_alpha: 0.99
+    exclude_bias_and_norm_from_weight_decay: true
+    no_decay_keywords:
+      - "bias"
+      - "norm"
+      - "layernorm"
+      - "layer_norm"
+      - "batchnorm"
+      - "batch_norm"
+      - "bn"
+
+  gradient_clipping:
+    enabled: true
+    max_norm: 1.0
+    norm_type: 2.0
+    error_if_nonfinite: false
+
+  scheduler:
+    enabled: true
+    name: "reduce_on_plateau"
+    monitor: "val_loss"
+    mode: "min"
+
+    warmup_epochs: 0
+    warmup_start_factor: 0.1
+
+    factor: 0.5
+    patience: 8
+    threshold: 0.0001
+    threshold_mode: "rel"
+    cooldown: 0
+    min_lr: 0.000001
+
+    t_max: 50
+    eta_min: 0.000001
+    step_size: 20
+    gamma: 0.5
+    exponential_gamma: 0.98
+
+  early_stopping:
+    enabled: true
+    monitor: "val_loss"
+    mode: "min"
+    patience: 12
+    min_delta: 0.000001
+    warmup_epochs: 3
+    restore_best: true
+    stop_on_nan: true
+
+  mixed_precision:
+    enabled: false
+    dtype: "float16"
+    use_grad_scaler: true
+
+  checkpointing:
+    save_best: true
+    save_last: true
+    best_checkpoint_name: "proposed_best.pt"
+    last_checkpoint_name: "proposed_last.pt"
+    save_optimizer_state: true
+    save_scheduler_state: true
+    save_training_history: true
+
+  outputs:
+    save_validation_predictions: true
+    save_epoch_history: true
+    save_training_summary: true
+    save_cuda_memory_stats: true
+
+  logging:
+    log_every_n_batches: 25
+    print_epoch_summary: true
+    print_dataset_summary: true
+    print_class_weights: true
+    print_checkpoint_paths: true
+
+  threshold_selection:
+    # Step 10/13/15: threshold and persistence selection.
+    # Final model/baseline threshold must be selected on Dataset-1 validation only.
+    enabled: true
+
+    selection_split: "val"
+    monitor_split: "val"
+
+    forbid_train_selection: true
+    forbid_test_selection: true
+    forbid_external_selection: true
+    forbid_online_selection: true
+
+    # Candidate theta values for c_t = I(p_hat_t >= theta).
+    # Keep BOTH threshold_grid and theta_grid for compatibility with old/new code.
+    threshold_grid:
+      - 0.05
+      - 0.10
+      - 0.15
+      - 0.20
+      - 0.25
+      - 0.30
+      - 0.35
+      - 0.40
+      - 0.45
+      - 0.50
+      - 0.55
+      - 0.60
+      - 0.65
+      - 0.70
+      - 0.75
+      - 0.80
+      - 0.85
+      - 0.90
+      - 0.95
+
+    theta_grid:
+      - 0.05
+      - 0.10
+      - 0.15
+      - 0.20
+      - 0.25
+      - 0.30
+      - 0.35
+      - 0.40
+      - 0.45
+      - 0.50
+      - 0.55
+      - 0.60
+      - 0.65
+      - 0.70
+      - 0.75
+      - 0.80
+      - 0.85
+      - 0.90
+      - 0.95
+
+    # Candidate N_p values for confirmed alarm after consecutive positives.
+    # Expanded because Step 13 selected persistence=5, which was the old grid boundary.
+    # Keep BOTH persistence_grid and persistence_values for compatibility.
+    persistence_grid:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+
+    persistence_values:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+
+    objective: "maximize_f1"
+
+    max_fpr_constraint: null
+    min_recall_constraint: null
+    min_attack_detection_rate_constraint: null
+
+    tie_breakers:
+      - "higher_attack_detection_rate"
+      - "lower_detection_delay"
+      - "lower_fpr"
+      - "higher_recall"
+      - "lower_persistence"
+      - "higher_threshold"
+
+    save_candidate_table: true
+    save_selected_payload: true
+
+    leakage_rules:
+      theta_selected_on_validation_only: true
+      persistence_selected_on_validation_only: true
+      train_not_used_for_selection: true
+      internal_test_not_used_for_selection: true
+      dataset1_test_not_used_for_threshold_selection: true
+      dataset2_external_not_used_for_selection: true
+      dataset2_not_used_for_threshold_selection: true
+      dataset3_online_not_used_for_selection: true
+      dataset3_not_used_for_threshold_selection: true
+      synthetic_step10_theta_not_final_model_threshold: true
+      synthetic_step10_theta_not_used: true

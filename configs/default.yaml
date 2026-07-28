@@ -1,0 +1,112 @@
+project:
+  name: "AV_GPS_Causal_Spoofing_Detection"
+
+run:
+  mode: "step1"
+  description: "Step 1 setup: config, logging, seed, device, and I/O"
+
+#run:
+#  mode: "step2"   # options now: step1, setup, step2, inspect, raw_inspection
+#  description: "Step 2: raw AV-GPS dataset loading and inspection"
+
+#run:
+#  mode: "step3"   # options: step1, setup, step2, inspect, raw_inspection, step3, segment, segmentation
+#  description: "Step 3: trajectory segmentation and preliminary transition validity"
+
+#run:
+#  mode: "step4"
+#  description: "Step 4: source-aware Dataset-1 segment-level train/val/test split"
+
+#run:
+#  mode: "step5"
+#  description: "Step 5: shortcut-column exclusion and clean causal column selection"
+
+#run:
+#  mode: "step6"
+#  description: "Step 6: Coordinate transform and motion model"
+
+#run:
+#  mode: "step7"
+#  description: "Step 7: residual construction and training-only normal statistics"
+
+#run:
+#  mode: "step8"
+#  description: "Step 8: build final causal xi evidence dataset"
+
+#run:
+#  mode: "step9"
+#  description: "Step 9: dataset objects and sequence batching"
+
+#run:
+#  mode: "step10"
+#  description: "Step 10: evaluation metrics, validation-only threshold selection, and alarm rules"
+
+
+#run:
+#  mode: "step11"
+#  description: "Step 11: proposed model modules and model factory"
+
+
+#run:
+#  mode: "step12"
+#  description: "Step 12: common PyTorch training loop"
+
+#run:
+#  mode: "step13"
+#  description: "Step 13: full proposed model experiment"
+
+#run:
+#  mode: "step14"
+#  description: "Step 14: full-model module-usage diagnostics"
+
+#run:
+#  mode: "step15"
+#  description: "Step 15: official fair baseline comparison"
+
+#run:
+#  mode: "step16"
+#  description: "Step 16: official controlled ablation study"
+
+#run:
+#  mode: "step16_frozen"
+#  description: "Step 16 frozen: component-intervention ablation using same trained full checkpoint"
+
+#run:
+#  mode: "step17_high_order"
+#  description: "Step 17: feature high-order vs model high-order comparison"
+
+#run:
+#  mode: "step17a_features"
+#  description: "Step 17A: feature-group intervention through the complete trained Proposed model"
+
+#run:
+#  mode: "step17b_kirchhoff"
+#  description: "Step 17B: full-feature Kirchhoff/model high-order structure comparison"
+
+#run:
+#  mode: "step19"
+#  description: "Step 19: Dataset-3 online case-study evaluation with Proposed vs EKF comparison"
+
+#run:
+#  mode: "step20"
+#  description: "Step 20: table-only operating-point sensitivity analysis using saved Step-13 predictions"
+
+#run:
+#  mode: "step21_multiseed"
+#  description: "Step 21: Proposed-model multi-seed robustness analysis using isolated per-seed retraining and validation-selected operating points"
+
+
+  save_logs: true
+  print_console_summary: true
+
+device:
+  preference: "cuda"          # options: cuda, cpu, auto
+  gpu_index: 0
+  allow_cpu_fallback: true
+  require_gpu: false
+
+logging:
+  console: true
+  run_log_file: "run_log.txt"
+  history_file: "experiment_history.csv"
+  error_log_file: "errors.log"

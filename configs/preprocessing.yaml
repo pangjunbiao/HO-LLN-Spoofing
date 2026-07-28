@@ -1,0 +1,298 @@
+preprocessing:
+  step3_enabled: true
+
+  time:
+    runtime_col: "Run Time"
+    hobbs_col: "Hobbs"
+    clock_date_col: "Clock Date"
+    clock_time_col: "Clock Time"
+
+    # AV-GPS dates are month/day/year style.
+    dayfirst: false
+
+    # Used for transition dt later. Clock time is preferred because it reflects real sampling.
+    prefer_clock_delta: true
+
+    # Boundary if adjacent time gap is larger than this.
+    # Dataset-3 is mostly 1 Hz; 5 seconds is conservative.
+    max_gap_seconds: 5.0
+
+    # Boundary if time goes backward by more than this tolerance.
+    reset_tolerance_seconds: -0.5
+
+  segmentation:
+    enabled: true
+
+    # Important: do NOT split only because label changes.
+    # We need continuous attack onset/recovery behavior for detection delay.
+    split_on_label_change: false
+
+    # Missing one clock pair should not automatically fragment everything.
+    # It will still make that transition invalid through validity_mask.py.
+    split_on_missing_clock_pair: false
+
+    # Nonpositive dt is invalid, but not always a new segment unless caused by reset/backward/gap.
+    split_on_nonpositive_time_delta: false
+
+    output_files:
+      dataset1: "dataset1_segmented.csv"
+      dataset1_normal: "dataset1_normal_segmented.csv"
+      dataset2: "dataset2_segmented.csv"
+      dataset3: "dataset3_segmented.csv"
+
+    per_dataset:
+      dataset1:
+        preserve_as_single_sequence: false
+
+      dataset1_normal:
+        preserve_as_single_sequence: false
+
+      dataset2:
+        preserve_as_single_sequence: false
+
+      dataset3:
+        # Locked rule: Dataset-3 is the online case-study sequence.
+        preserve_as_single_sequence: true
+
+  validity:
+    min_delta_seconds: 0.0
+    max_delta_seconds: 5.0
+
+    # Important for Dataset-3 recovery boundary:
+    # avoid counting attack-to-normal recovery jump as normal false alarm evidence.
+    invalidate_attack_to_normal_boundary: true
+
+    # Later xi_t construction will refine nu_t with displacement availability/alignment.
+    preliminary_nu_column: "nu_prelim"
+
+
+  clean_columns:
+    enabled: true
+
+    # Keep only safe causal source columns plus metadata/labels/segment/validity columns.
+    keep_only_policy_columns: true
+
+    # Optional velocity components are useful if present, but missing columns should not stop the pipeline.
+    allow_missing_optional_columns: true
+
+    metadata_columns:
+      - "raw_row_index"
+      - "row_order_in_source"
+      - "row_index_original"
+      - "source_key"
+      - "source_file"
+      - "dataset_role"
+
+    segment_columns:
+      - "segment_id"
+      - "segment_index"
+      - "within_segment_index"
+
+    transition_validity_columns:
+      - "delta_t_seconds"
+      - "valid_transition_prelim"
+      - "nu_prelim"
+      - "invalid_transition_reason"
+      - "is_segment_start"
+      - "crosses_segment_boundary"
+      - "segment_boundary"
+      - "segment_boundary_reason"
+      - "normal_to_attack_transition"
+      - "attack_to_normal_transition"
+
+  coordinate_transform:
+    enabled: true
+
+    segment_column: "segment_id"
+    order_column: "within_segment_index"
+
+    latitude_column: "GPS Latitude"
+    longitude_column: "GPS Longitude"
+    delta_t_column: "delta_t_seconds"
+
+    # Basic physical sanity limits.
+    max_abs_latitude: 90.0
+    max_abs_longitude: 180.0
+
+    # Local ENU/east-north coordinates are computed per segment.
+    reference_strategy: "first_valid_gnss_per_segment"
+    reset_reference_at_segment_start: true
+
+  motion_model:
+    enabled: true
+
+    segment_column: "segment_id"
+    order_column: "within_segment_index"
+    delta_t_column: "delta_t_seconds"
+
+    speed_column: "Velocity (m/s)"
+    heading_column: "Heading (deg)"
+    yaw_column: "Yaw (deg)"
+    yaw_rate_column: "Yaw Rate (deg/s)"
+    steering_angle_column: "Steering Angle (deg)"
+
+    longitudinal_velocity_column: "Longitudinal Velocity (m/s)"
+    lateral_velocity_column: "Lateral Velocity (m/s)"
+
+    # Use Heading first; if Heading is missing, fall back to Yaw.
+    heading_source: "heading_then_yaw"
+
+    # Conservative default: use speed+heading. Optional components are kept,
+    # but not preferred unless we later verify their frame convention.
+    prefer_velocity_components: false
+
+    # Sanity filters.
+    max_abs_speed_mps: 80.0
+    max_delta_seconds: 5.0
+
+    # Causal integration:
+    # Delta p_u(t) = 0.5 * (v_t + v_{t-1}) * delta_t
+    integration_method: "trapezoidal_causal"
+
+  residual:
+    enabled: true
+
+    segment_column: "segment_id"
+    order_column: "within_segment_index"
+    delta_t_column: "delta_t_seconds"
+
+    gnss_delta_east_column: "delta_pos_g_east_m"
+    gnss_delta_north_column: "delta_pos_g_north_m"
+    motion_delta_east_column: "delta_pos_u_east_m"
+    motion_delta_north_column: "delta_pos_u_north_m"
+
+    gnss_valid_column: "gnss_displacement_valid"
+    motion_valid_column: "motion_displacement_valid"
+    preliminary_nu_column: "nu_prelim"
+
+    residual_east_column: "residual_east_m"
+    residual_north_column: "residual_north_m"
+    residual_norm_column: "residual_norm_m"
+    residual_finite_column: "residual_finite"
+
+    # Final methodology validity flag nu_t.
+    residual_valid_column: "nu"
+    residual_invalid_reason_column: "residual_invalid_reason"
+
+    # Same conservative transition limit as Step 3 and Step 6.
+    max_delta_seconds: 5.0
+
+  normal_statistics:
+    enabled: true
+
+    # Critical leakage rule:
+    # Estimate Sigma_r^tr and mu_e from Dataset-1 TRAIN NORMAL valid residuals only.
+    dataset_key: "dataset1"
+    split_name: "train"
+
+    segment_column: "segment_id"
+
+    covariance_epsilon: 0.000001
+    min_train_normal_samples: 100
+
+    # Covariance should be centered statistically.
+    center_covariance_estimation: true
+
+    # Methodology energy uses eta = Sigma^{-1/2} r_t.
+    # Therefore energy is not mean-subtracted by default.
+    subtract_residual_mean_for_energy: false
+
+    train_normal_samples_csv: "dataset1_train_normal_residual_samples.csv"
+
+    leakage_rules:
+      use_dataset1_only: true
+      use_train_split_only: true
+      use_normal_labels_only: true
+      use_valid_residuals_only: true
+      do_not_use_validation: true
+      do_not_use_internal_test: true
+      do_not_use_dataset1_normal_as_independent_training_data: true
+      do_not_use_dataset2: true
+      do_not_use_dataset3: true
+
+  evidence:
+    enabled: true
+
+    segment_column: "segment_id"
+    order_column: "within_segment_index"
+    delta_t_column: "delta_t_seconds"
+
+    residual_east_column: "residual_east_m"
+    residual_north_column: "residual_north_m"
+    residual_valid_column: "nu"
+
+    # Weak accumulation. rho is fixed here.
+    # kappa is kept 0.0 for the leakage-safe base xi dataset.
+    # Later validation-only sensitivity can tune kappa if needed.
+    cusum_rho: 0.98
+    kappa: 0.0
+    max_delta_seconds: 5.0
+
+    eta_east_column: "xi_eta_east"
+    eta_north_column: "xi_eta_north"
+
+    eta_dot_east_column: "xi_eta_dot_east"
+    eta_dot_north_column: "xi_eta_dot_north"
+
+    eta_ddot_east_column: "xi_eta_ddot_east"
+    eta_ddot_north_column: "xi_eta_ddot_north"
+
+    q_column: "xi_q"
+    q_raw_column: "xi_q_raw"
+
+    accum_raw_column: "xi_accum_raw"
+    accum_log_column: "xi_accum_log"
+
+    nu_column: "xi_nu"
+
+    residual_energy_column: "xi_residual_energy"
+    dot_valid_column: "xi_dot_valid"
+    ddot_valid_column: "xi_ddot_valid"
+    xi_valid_column: "xi_valid"
+
+    output_rules:
+      final_model_input_is_xi_only: true
+      proposed_baselines_ablations_same_xi_source: true
+      no_raw_shortcut_columns: true
+      no_future_rows: true
+      reset_evolution_at_segment_start: true
+      reset_cusum_at_segment_start: true
+      invalid_rows_eta_zero: true
+      invalid_rows_q_zero: true
+      invalid_rows_nu_zero: true
+
+  xi_scaler:
+    enabled: true
+
+    # Robust scaling is chosen because Step 7 showed possible extreme residual-energy outliers.
+    # Fit on Dataset-1 train split only.
+    method: "robust"
+
+    continuous_feature_columns:
+      - "xi_eta_east"
+      - "xi_eta_north"
+      - "xi_eta_dot_east"
+      - "xi_eta_dot_north"
+      - "xi_eta_ddot_east"
+      - "xi_eta_ddot_north"
+      - "xi_q"
+      - "xi_accum_log"
+
+    passthrough_feature_columns:
+      - "xi_nu"
+
+    scaled_suffix: "_scaled"
+
+    clip_scaled_features: true
+    clip_value: 20.0
+    epsilon: 0.00000001
+
+    leakage_rules:
+      fit_on_dataset1_train_only: true
+      do_not_fit_on_validation: true
+      do_not_fit_on_internal_test: true
+      do_not_fit_on_dataset1_normal: true
+      do_not_fit_on_dataset2: true
+      do_not_fit_on_dataset3: true
+      apply_same_scaler_to_all_splits: true
+      proposed_baselines_ablations_use_same_scaled_xi: true

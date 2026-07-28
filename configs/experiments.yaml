@@ -1,0 +1,739 @@
+experiments:
+  run_full_model: false
+  run_baselines: false
+  run_ablations: false
+  run_high_order_comparison: false
+  run_diagnostics: false
+  run_sensitivity: false
+
+  step11_model_factory:
+    enabled: true
+
+    build_full_model: true
+    build_official_ablations: true
+    build_high_order_comparison: true
+
+    run_forward_sanity_checks: true
+    save_architecture_summaries: true
+
+    synthetic_batch:
+      batch_size: 2
+      time_steps: 16
+
+    fairness_checks:
+      enforce_same_input_columns: true
+      enforce_scaled_xi_only: true
+      enforce_no_raw_shortcut_columns: true
+      enforce_no_threshold_inside_model: true
+      enforce_no_alarm_rule_inside_model: true
+      enforce_ablation_config_only_changes: true
+
+    note: "Step 11 builds architectures only. Training starts in Step 12."
+
+  step13:
+    enabled: true
+    experiment_name: "full_proposed_model_step13"
+
+    model_name: "Proposed"
+
+    # reuse_if_exists = use results/models/proposed_best.pt if it already exists.
+    # always = retrain full proposed model first.
+    # never = fail if proposed_best.pt is missing.
+#    retrain_policy: "reuse_if_exists"
+    retrain_policy: "never"
+
+    checkpoint_path: null
+
+    evaluate_dataset1: true
+    evaluate_dataset2: true
+    evaluate_dataset3: true
+
+    save_summary: true
+    print_primary_metrics: true
+
+    leakage_rules:
+      threshold_selected_on_dataset1_validation_only: true
+      dataset1_test_not_used_for_threshold_selection: true
+      dataset2_not_used_for_threshold_selection: true
+      dataset3_not_used_for_threshold_selection: true
+      synthetic_step10_theta_not_used: true
+
+  step14:
+    enabled: true
+    experiment_name: "full_model_module_usage_diagnostics"
+
+    model_name: "Proposed"
+    variant_name: "full"
+    checkpoint_path: null
+
+    # Output root for all Step-14 diagnostic CSV/JSON/plots.
+    output_dir: "results/figures/module_usage"
+
+    # We diagnose internal test, external test, and online case study.
+    diagnostic_splits:
+      - "test"
+      - "external"
+      - "online"
+
+    save_json: true
+    save_csv: true
+    print_console_summary: true
+
+    module_usage:
+      enabled: true
+      max_modules: 80
+      max_batches_per_split: null
+      module_keywords:
+        - "evidence"
+        - "encoder"
+        - "kirchhoff"
+        - "exchange"
+        - "conductance"
+        - "third"
+        - "fusion"
+        - "liquid"
+        - "temporal"
+        - "output"
+        - "head"
+
+    feature_importance:
+      enabled: true
+
+      # neutral:
+      #   scaled continuous features -> 0.0
+      #   xi_nu -> 1.0
+      # This avoids pretending valid rows are invalid.
+      replacement_strategy: "neutral"
+
+    conductance_analysis:
+      enabled: true
+      max_modules: 60
+      module_keywords:
+        - "kirchhoff"
+        - "conductance"
+        - "exchange"
+        - "cie"
+        - "cip"
+        - "cep"
+
+    third_order_analysis:
+      enabled: true
+      max_modules: 60
+      module_keywords:
+        - "third"
+        - "high_order"
+        - "highorder"
+        - "fusion"
+        - "interaction"
+        - "product"
+        - "joint"
+
+    liquid_state_analysis:
+      enabled: true
+      max_modules: 80
+      module_keywords:
+        - "liquid"
+        - "second_order"
+        - "secondorder"
+        - "temporal"
+        - "state"
+        - "velocity"
+        - "gamma"
+        - "beta"
+        - "tau"
+        - "time_constant"
+
+    occlusion_tests:
+      enabled: true
+      replacement_strategy: "neutral"
+      top_k_console: 10
+
+    plots:
+      enabled: true
+      subdir: "plots"
+      top_k: 20
+      dpi: 180
+      figure_width: 12.0
+      figure_height: 7.0
+      save_png: true
+      save_pdf: true
+
+    important_notes:
+      occlusion_is_diagnostic_only: true
+      official_ablation_must_retrain_from_scratch: true
+      use_step13_validation_threshold: true
+      do_not_select_new_threshold_here: true
+      dataset2_row_level_strong_but_event_level_weaker: true
+      persistence_grid_maximum_should_be_checked_before_baselines: true
+
+  step16:
+    enabled: true
+    experiment_name: "official_controlled_ablation_study_step16"
+
+    # Locked paper ablations.
+    # Do not add/remove variants here unless we decide to change the paper protocol.
+    variants:
+      - "full"
+      - "no_residual_evolution"
+      - "no_weak_accumulation"
+      - "no_kirchhoff_exchange"
+      - "no_third_order"
+      - "no_liquid_dynamics"
+
+    # Official rule:
+    # each variant is built separately, initialized from scratch,
+    # trained from scratch, validated, threshold-selected, and tested.
+    retrain_policy: "always"
+
+    evaluate_dataset1: true
+    evaluate_dataset2: true
+    evaluate_dataset3: true
+
+    models_dir: "results/models/ablations"
+    tables_dir: "results/tables/ablations"
+    plots_dir: "results/figures/ablation_plots"
+
+    summary_json: "results/tables/ablation_summary.json"
+    results_csv: "results/tables/ablation_results.csv"
+    all_splits_csv: "results/tables/ablation_results_all_splits.csv"
+    threshold_csv: "results/tables/ablation_threshold_selection.csv"
+
+    save_plots: true
+    save_variant_artifacts: true
+    print_console_tables: true
+
+    fairness_rules:
+      ablations_are_config_controlled_variants: true
+      all_variants_built_separately: true
+      all_variants_initialized_from_scratch: true
+      all_variants_trained_from_scratch: true
+      all_variants_trained_on_dataset1_train_only: true
+      threshold_selected_on_dataset1_validation_only: true
+      dataset1_test_not_used_for_threshold_selection: true
+      dataset2_external_not_used_for_tuning: true
+      dataset3_online_not_used_for_tuning: true
+      same_9_scaled_xi_features: true
+      raw_shortcut_columns_used: false
+      synthetic_step10_theta_used: false
+
+    expected_outputs:
+      models_dir: "results/models/ablations"
+      main_results_csv: "results/tables/ablation_results.csv"
+      all_splits_csv: "results/tables/ablation_results_all_splits.csv"
+      threshold_csv: "results/tables/ablation_threshold_selection.csv"
+      summary_json: "results/tables/ablation_summary.json"
+      plots_dir: "results/figures/ablation_plots"
+
+    paper_goal:
+      full_model_reference:
+        AUROC: 0.9899
+        AUPRC: 0.9747
+        F1: 0.9052
+        Precision: 0.9587
+        Recall: 0.8574
+        FPR: 0.0129
+        Attack_Detection_Rate: 1.00
+        Detection_Delay: 3.0
+        theta: 0.80
+        persistence: 7
+      expected_pattern: "Full model should be competitive with or better than ablations, but results must be reported honestly."
+
+
+  step16_frozen:
+    enabled: true
+    experiment_name: "frozen_component_intervention_ablation_step16"
+
+    checkpoint_path: "results/models/proposed_best.pt"
+    retrain_policy: "never"
+
+    variants:
+      - "full"
+      - "no_residual_evolution"
+      - "no_weak_accumulation"
+      - "no_kirchhoff_exchange"
+      - "no_third_order"
+      - "no_liquid_dynamics"
+
+    threshold_policy: "select_per_variant_on_validation"
+    evaluate_dataset1: true
+    evaluate_dataset2: true
+    evaluate_dataset3: true
+
+    tables_dir: "results/tables/frozen_ablations"
+    results_csv: "results/tables/frozen_ablations/frozen_ablation_results.csv"
+    all_splits_csv: "results/tables/frozen_ablations/frozen_ablation_results_all_splits.csv"
+    threshold_csv: "results/tables/frozen_ablations/frozen_ablation_threshold_selection.csv"
+    summary_json: "results/tables/frozen_ablations/frozen_ablation_summary.json"
+
+    note: "Frozen intervention ablation: same trained full checkpoint, one module disabled during evaluation only."
+
+  # --------------------------------------------------------------------------
+  # Step 17 — High-order comparison experiment
+  #
+  # Purpose:
+  #   Answer professor's question:
+  #   "feature high-order vs model high-order?"
+  #
+  # This is a retrained 2x2 factorial comparison, not a frozen ablation.
+  # Each H variant is trained fairly from scratch on Dataset-1 train only.
+  # Threshold/persistence are selected on Dataset-1 validation only.
+  # Dataset-2 and Dataset-3 are evaluation-only.
+  # --------------------------------------------------------------------------
+  step17_high_order_comparison:
+    enabled: true
+    experiment_name: "step17_high_order_feature_vs_model_comparison"
+
+    retrain_policy: "always"
+
+    variants:
+      - "H0_no_feature_no_model_high_order"
+      - "H1_feature_high_order_only"
+      - "H2_model_high_order_only"
+      - "H3_full_feature_model_high_order"
+
+    evaluate_dataset1: true
+    evaluate_dataset2: true
+    evaluate_dataset3: true
+
+    models_dir: "results/models/high_order_comparison"
+    tables_dir: "results/tables/high_order_comparison"
+    plots_dir: "results/figures/high_order_comparison_plots"
+
+    results_csv: "results/tables/high_order_comparison.csv"
+    all_splits_csv: "results/tables/high_order_comparison_all_splits.csv"
+    effects_csv: "results/tables/high_order_effects.csv"
+    threshold_csv: "results/tables/high_order_threshold_selection.csv"
+    summary_json: "results/tables/high_order_comparison_summary.json"
+
+    save_plots: true
+    save_variant_artifacts: true
+    print_console_tables: true
+
+    note: "Step 17 answers feature high-order vs model high-order using H0/H1/H2/H3 factorial design."
+
+  # --------------------------------------------------------------------------
+  # Step 17 Final — Feature/model high-order analysis
+  #
+  # This is the final professor-facing Step 17.
+  #
+  # Step 17A:
+  #   Feature-group intervention through the complete trained Proposed model.
+  #
+  # Step 17B:
+  #   Kirchhoff / model high-order structure comparison using full xi features.
+  #
+  # Important:
+  #   - 17A Full uses official proposed_best.pt and official Step-13 theta/Np.
+  #   - 17B K3 uses official proposed_best.pt and official Step-13 theta/Np.
+  #   - Therefore 17A Full and 17B K3 should match the main Proposed result.
+  # --------------------------------------------------------------------------
+  step17_feature_model_analysis:
+    enabled: true
+    experiment_name: "step17_final_feature_model_high_order_analysis"
+    summary_json: "results/tables/step17_feature_model_analysis/step17_feature_model_analysis_summary.json"
+
+    run_step17a_feature_group_intervention: true
+    run_step17b_kirchhoff_structure_comparison: true
+
+    note: "Final Step 17 analysis: features through full model + Kirchhoff/model high-order structure."
+
+
+  # --------------------------------------------------------------------------
+  # Step 17A — Feature-group intervention through the complete Proposed model
+  #
+  # Question:
+  #   Which engineered GNSS evidence features does the trained Proposed model
+  #   actually use to detect GPS spoofing?
+  #
+  # Protocol:
+  #   - Use official results/models/proposed_best.pt.
+  #   - Do not retrain.
+  #   - Use official Step-13 selected theta/Np.
+  #   - Mask one xi feature group during evaluation.
+  # --------------------------------------------------------------------------
+  step17a_feature_group_intervention:
+    enabled: true
+    experiment_name: "step17a_feature_group_intervention"
+
+    checkpoint_path: "results/models/proposed_best.pt"
+    threshold_json: "results/tables/proposed_threshold_selection.json"
+
+    variants:
+      - "full_features"
+      - "no_accum_log"
+      - "no_residual_dynamics"
+      - "no_dynamic_energy_evidence"
+      - "low_order_only"
+      - "nu_only"
+
+    evaluate_dataset1: true
+    evaluate_dataset2: true
+    evaluate_dataset3: true
+
+    tables_dir: "results/tables/step17_feature_model_analysis/feature_group_intervention"
+    plots_dir: "results/figures/step17_feature_model_analysis/feature_group_intervention"
+
+    results_csv: "results/tables/step17_feature_model_analysis/step17a_feature_group_intervention_dataset1.csv"
+    all_splits_csv: "results/tables/step17_feature_model_analysis/step17a_feature_group_intervention_all_splits.csv"
+    delta_csv: "results/tables/step17_feature_model_analysis/step17a_feature_group_intervention_deltas.csv"
+    summary_json: "results/tables/step17_feature_model_analysis/step17a_feature_group_intervention_summary.json"
+
+    save_variant_artifacts: true
+    save_plots: true
+    print_console_tables: true
+
+    fairness_rules:
+      same_official_proposed_checkpoint_for_all_feature_interventions: true
+      no_retraining: true
+      same_theta_np_as_main_proposed: true
+      same_9_dimensional_input_shape: true
+      feature_group_zeroed_at_runtime_only: true
+      dataset1_validation_threshold_from_step13: true
+      dataset1_test_not_used_for_threshold_selection: true
+      dataset2_external_not_used_for_tuning: true
+      dataset3_online_not_used_for_tuning: true
+      raw_shortcut_columns_used: false
+
+    note: "17A proves feature contribution through the complete trained Proposed model."
+
+
+  # --------------------------------------------------------------------------
+  # Step 17B — Kirchhoff / model high-order structure comparison
+  #
+  # Question:
+  #   Given the same full xi feature evidence, why use Kirchhoff / high-order
+  #   model structure?
+  #
+  # Protocol:
+  #   - All variants use full xi features.
+  #   - K0/K1/K2 are trained fairly from scratch.
+  #   - K0/K1/K2 select theta/Np on Dataset-1 validation only.
+  #   - K3 reuses official proposed_best.pt.
+  #   - K3 uses official Step-13 selected theta/Np.
+  # --------------------------------------------------------------------------
+  step17b_kirchhoff_structure_comparison:
+    enabled: true
+    experiment_name: "step17b_kirchhoff_structure_comparison"
+
+    retrain_policy: "always"
+
+    k3_checkpoint_path: "results/models/proposed_best.pt"
+    k3_threshold_json: "results/tables/proposed_threshold_selection.json"
+
+    variants:
+      - "K0_full_features_simple_model"
+      - "K1_full_features_kirchhoff_only"
+      - "K2_full_features_kirchhoff_third_order"
+      - "K3_official_proposed"
+
+    evaluate_dataset1: true
+    evaluate_dataset2: true
+    evaluate_dataset3: true
+
+    models_dir: "results/models/step17b_kirchhoff_structure"
+    tables_dir: "results/tables/step17_feature_model_analysis/kirchhoff_structure"
+    plots_dir: "results/figures/step17_feature_model_analysis/kirchhoff_structure"
+
+    results_csv: "results/tables/step17_feature_model_analysis/step17b_kirchhoff_structure_dataset1.csv"
+    all_splits_csv: "results/tables/step17_feature_model_analysis/step17b_kirchhoff_structure_all_splits.csv"
+    threshold_csv: "results/tables/step17_feature_model_analysis/step17b_kirchhoff_structure_threshold_selection.csv"
+    summary_json: "results/tables/step17_feature_model_analysis/step17b_kirchhoff_structure_summary.json"
+
+    save_variant_artifacts: true
+    save_plots: false
+    print_console_tables: true
+
+    fairness_rules:
+      all_variants_use_full_xi_features: true
+      k0_k1_k2_train_on_dataset1_train_only: true
+      k0_k1_k2_threshold_selected_on_dataset1_validation_only: true
+      k3_reuses_official_proposed_checkpoint: true
+      k3_reuses_official_step13_theta_np: true
+      dataset1_test_not_used_for_threshold_selection: true
+      dataset2_external_not_used_for_tuning: true
+      dataset3_online_not_used_for_tuning: true
+      raw_shortcut_columns_used: false
+
+    note: "17B tests what Kirchhoff/third-order/liquid structure adds when full xi feature evidence is fixed."
+
+  step19_dataset3_case_study:
+    enabled: true
+    description: "Dataset-3 online EKF comparison and case-study visualization."
+
+    rule:
+      train_model: false
+      rerun_proposed_model: false
+      retune_threshold: false
+      dataset3_used_for_threshold_selection: false
+      use_saved_step13_predictions: true
+
+    inputs:
+      proposed_predictions_csv: "results/tables/dataset3_online_predictions.csv"
+      proposed_threshold_selection_json: "results/tables/proposed_threshold_selection.json"
+
+      # Preferred source for xi_q / xi_accum_log if present.
+      online_xi_csv: "data/processed/online_xi.csv"
+
+      # Required fallback source for EKF Detector column.
+      raw_dataset3_csv: "data/raw/AV-GPS-Dataset-3.csv"
+
+    ekf:
+      column: "EKF Detector"
+      use_as_binary_alarm: true
+      apply_persistence: false
+
+    outputs:
+      comparison_csv: "results/tables/dataset3_online_ekf_comparison.csv"
+      summary_json: "results/tables/dataset3_online_ekf_comparison_summary.json"
+      plot_source_csv: "results/tables/dataset3_online_case_study_plot_source.csv"
+      figure_dir: "results/figures/dataset3_case_study"
+
+    plotting:
+      save_png: true
+      save_pdf: true
+
+      residual_energy_candidates:
+        - "xi_q"
+        - "xi_q_scaled"
+
+      accumulated_evidence_candidates:
+        - "xi_accum_log"
+        - "xi_accum_log_scaled"
+
+    sanity_check:
+      enabled: true
+      strict: false
+      expected_proposed:
+        false_alarm_events: 3
+        attack_1_delay: 15.0
+        attack_2_delay: 54.0
+        mean_delay: 34.5
+        attack_detection_rate: 1.0
+
+  proposed:
+    enabled: true
+    model_name: "Proposed"
+#    retrain_policy: "reuse_if_exists"
+    retrain_policy: "never"
+    checkpoint_path: null
+
+    evaluate_dataset1: true
+    evaluate_dataset2: true
+    evaluate_dataset3: true
+
+  multiseed_proposed:
+    enabled: true
+    experiment_name: "proposed_multiseed_robustness"
+
+    # First test:
+#    seeds: [ 42 ]
+
+    # Later final run:
+    seeds: [42, 43, 44, 45, 46]
+
+    retrain_policy: "always"
+    evaluate_dataset1: true
+    evaluate_dataset2: true
+    evaluate_dataset3: true
+
+    base_models_dir: "results/models/multiseed"
+    base_tables_dir: "results/tables/multiseed"
+
+    continue_on_error: false
+
+  evaluation:
+    enabled: true
+
+    locked_primary_metrics:
+      - "AUPRC"
+      - "F1"
+      - "FPR"
+      - "Attack Detection Rate"
+      - "Detection Delay"
+
+    secondary_metrics:
+      - "AUROC"
+      - "Precision"
+      - "Recall"
+      - "Runtime"
+      - "Normal-Segment FAR"
+
+    probability_metrics:
+      computed_from_probabilities: true
+      metrics:
+        - "AUPRC"
+        - "AUROC"
+
+    threshold_metrics:
+      computed_from_confirmed_alarms: true
+      metrics:
+        - "F1"
+        - "Precision"
+        - "Recall"
+        - "FPR"
+
+    alarm_rule:
+      decision_rule: "c_t = I(p_hat_t >= theta)"
+      confirmation_rule: "confirmed alarm after N_p consecutive positives"
+      reset_at_segment_boundary: true
+      invalid_rows_break_positive_run: true
+      use_xi_nu_as_validity_mask: true
+
+    threshold_selection:
+      selected_on_validation_only: true
+      selected_parameters:
+        - "theta"
+        - "N_p"
+      apply_selected_threshold_to:
+        - "train_diagnostics"
+        - "internal_test"
+        - "dataset2_external"
+        - "dataset3_online"
+      never_select_on:
+        - "train"
+        - "test"
+        - "dataset2_external"
+        - "dataset3_online"
+
+    reporting_tables:
+      internal_test_table_columns:
+        - "Model"
+        - "AUROC"
+        - "AUPRC"
+        - "F1"
+        - "Precision"
+        - "Recall"
+        - "FPR"
+        - "Attack Detection Rate"
+        - "Detection Delay"
+        - "theta"
+        - "persistence"
+
+      dataset2_external_table_columns:
+        - "Dataset"
+        - "Model"
+        - "AUPRC"
+        - "AUROC"
+        - "F1"
+        - "Precision"
+        - "Recall"
+        - "FPR"
+        - "Attack Detection Rate"
+        - "Detection Delay"
+        - "theta"
+        - "persistence"
+
+      dataset3_online_case_table_columns:
+        - "Dataset"
+        - "Model"
+        - "AUPRC"
+        - "AUROC"
+        - "F1"
+        - "Precision"
+        - "Recall"
+        - "FPR"
+        - "False Alarm Rows"
+        - "False Alarm Events"
+        - "Attack Detection Rate"
+        - "Attack-1 Delay"
+        - "Attack-2 Delay"
+        - "Mean Delay"
+        - "theta"
+        - "persistence"
+
+      ablation_dataset1_table_columns:
+        - "variant_name"
+        - "display_name"
+        - "AUROC"
+        - "AUPRC"
+        - "F1"
+        - "Precision"
+        - "Recall"
+        - "FPR"
+        - "Attack Detection Rate"
+        - "Detection Delay"
+        - "theta"
+        - "persistence"
+        - "val_selected_f1"
+        - "val_selected_auprc"
+        - "val_selected_auroc"
+        - "val_selected_fpr"
+        - "best_epoch"
+        - "best_monitor"
+        - "best_monitor_value"
+
+      ablation_all_splits_table_columns:
+        - "variant_name"
+        - "display_name"
+        - "split"
+        - "AUROC"
+        - "AUPRC"
+        - "F1"
+        - "Precision"
+        - "Recall"
+        - "FPR"
+        - "Attack Detection Rate"
+        - "Detection Delay"
+        - "False Alarm Rows"
+        - "False Alarm Events"
+        - "Attack-1 Delay"
+        - "Attack-2 Delay"
+        - "theta"
+        - "persistence"
+
+    fairness_rules:
+      all_models_use_same_metric_code: true
+      all_models_use_same_alarm_rule: true
+      all_models_select_theta_np_on_validation_only: true
+      baselines_and_ablations_use_same_threshold_search_grid: true
+      dataset2_external_never_tuned: true
+      dataset3_online_never_tuned: true
+
+sensitivity:
+  enabled: true
+  description: "Step 20 hybrid sensitivity analysis: retrain for model capacity, reuse predictions for alarm-rule parameters."
+
+  mode: "hybrid"
+  save_plots: false
+  print_console_tables: true
+
+  outputs:
+    results_csv: "results/tables/sensitivity_results.csv"
+    summary_json: "results/tables/sensitivity_summary.json"
+    models_dir: "results/models/sensitivity"
+    artifacts_dir: "results/tables/sensitivity"
+
+  rules:
+    dataset1_train_used_for_retraining: true
+    dataset1_validation_used_for_threshold_selection: true
+    dataset1_test_used_only_for_evaluation: true
+    dataset2_used: false
+    dataset3_used: false
+    save_plots: false
+    no_raw_shortcut_columns: true
+    no_ekf_detector_input: true
+
+  theta:
+    default: 0.60
+    enabled: true
+    retrain: false
+    values: [0.5, 0.6, 0.7, 0.8, 0.9]
+
+  persistence:
+    default: 8
+    enabled: true
+    retrain: false
+    values: [3, 5, 7, 9, 11]
+
+  hidden_dim:
+    default: 64
+    enabled: true
+    retrain: true
+    values: [32, 64, 128]
+
+  rho:
+    default: 0.95
+    enabled: false
+    retrain: false
+    values: [0.90, 0.95, 0.99]
+    note: "Disabled because rho is not currently defined in model.yaml or training.yaml. Enable only after locating the preprocessing/model config path."

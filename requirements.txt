@@ -1,0 +1,22 @@
+# Core numerical and data-processing dependencies
+numpy>=1.24,<3.0
+pandas>=2.0,<3.0
+scipy>=1.10,<2.0
+
+# Machine learning
+scikit-learn>=1.3,<2.0
+xgboost>=2.0,<4.0
+joblib>=1.3,<2.0
+
+# Deep learning
+torch>=2.0,<3.0
+
+# Configuration and utilities
+PyYAML>=6.0,<7.0
+tqdm>=4.65,<5.0
+
+# Visualization
+matplotlib>=3.7,<4.0
+
+# Testing and validation utilities
+pytest>=7.4,<9.0

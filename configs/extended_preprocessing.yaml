@@ -1,0 +1,53 @@
+# Isolated corrected-evidence branch for the extended comparison experiments.
+#
+# IMPORTANT:
+# - Do not add this file to DEFAULT_CONFIG_ORDER.
+# - Load it explicitly and last only when running the isolated Step-1 branch.
+# - Existing project data, checkpoints, tables, and figures remain read-only.
+
+extended_preprocessing:
+  enabled: true
+  branch_name: "corrected_evidence_v1"
+  protect_main_project: true
+  require_isolated_paths: true
+
+  data_root: "data/extended_comparison/corrected_evidence_v1"
+  result_root: "results/extended_comparison/corrected_evidence_v1"
+
+  audit:
+    enabled: true
+    compare_with_legacy_rule: true
+    verify_label_independent_validity: true
+    verify_label_independent_samplewise_evidence: true
+    numeric_atol: 1.0e-10
+    numeric_rtol: 1.0e-8
+
+# The existing validity_mask.py already supports this option.
+# No existing Python source file needs to be changed.
+preprocessing:
+  validity:
+    invalidate_attack_to_normal_boundary: false
+
+# All regenerated artifacts are redirected to isolated directories.
+# Existing data/splits is reused read-only because segment membership is unchanged.
+paths:
+  interim_data_dir: "data/extended_comparison/corrected_evidence_v1/interim"
+  processed_data_dir: "data/extended_comparison/corrected_evidence_v1/processed"
+  splits_dir: "data/splits"
+
+  step3_segmentation_json: "results/extended_comparison/corrected_evidence_v1/reports/step3_segmentation_summary.json"
+  step5_clean_columns_json: "results/extended_comparison/corrected_evidence_v1/reports/step5_clean_columns_summary.json"
+  step6_physical_model_json: "results/extended_comparison/corrected_evidence_v1/reports/step6_coordinate_motion_summary.json"
+
+  step7_residual_summary_json: "results/extended_comparison/corrected_evidence_v1/reports/step7_residual_summary.json"
+  step7_normal_statistics_json: "results/extended_comparison/corrected_evidence_v1/reports/step7_normal_statistics.json"
+  step7_residual_normal_statistics_json: "results/extended_comparison/corrected_evidence_v1/reports/step7_residual_normal_statistics.json"
+
+  step8_evidence_summary_json: "results/extended_comparison/corrected_evidence_v1/reports/step8_evidence_summary.json"
+  step8_energy_diagnostics_json: "results/extended_comparison/corrected_evidence_v1/reports/step8_energy_diagnostics.json"
+  step8_xi_scaler_json: "results/extended_comparison/corrected_evidence_v1/reports/step8_xi_scaler.json"
+  step8_xi_feature_spec_json: "results/extended_comparison/corrected_evidence_v1/reports/step8_xi_feature_spec.json"
+  step8_normal_statistics_validation_json: "results/extended_comparison/corrected_evidence_v1/reports/step8_normal_statistics_validation.json"
+
+  extended_preprocessing_manifest_json: "results/extended_comparison/corrected_evidence_v1/manifests/corrected_evidence_manifest.json"
+  extended_preprocessing_audit_json: "results/extended_comparison/corrected_evidence_v1/manifests/label_independence_audit.json"

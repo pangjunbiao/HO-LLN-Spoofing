@@ -1,0 +1,61 @@
+# ============================================================
+# HO-LLN-Spoofing: files excluded from version control
+# ============================================================
+
+# IDE and editor files
+.idea/
+.vscode/
+*.iml
+
+# Python cache and temporary files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and package artifacts
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Root-level datasets and generated features
+/data/
+
+# Root-level experimental outputs
+/results/
+/logs/
+/outputs/
+/runs/
+/checkpoints/
+/wandb/
+/tensorboard/
+
+# Trained models and prediction artifacts
+*.pt
+*.pth
+*.ckpt
+*.joblib
+*.pkl
+*.npz
+
+# Sensitive or machine-specific files
+.env
+.env.*
+*.key
+*.pem
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary inspection file
+project_tree.txt

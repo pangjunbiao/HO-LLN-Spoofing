@@ -1,0 +1,83 @@
+paths:
+  data_dir: "data"
+  raw_data_dir: "data/raw"
+  interim_data_dir: "data/interim"
+  processed_data_dir: "data/processed"
+  splits_dir: "data/splits"
+
+  results_dir: "results"
+  tables_dir: "results/tables"
+  figures_dir: "results/figures"
+  models_dir: "results/models"
+
+  logs_dir: "logs"
+
+  step2_inspection_json: "results/tables/step2_raw_dataset_inspection.json"
+  step3_segmentation_json: "results/tables/step3_segmentation_summary.json"
+  step5_clean_columns_json: "results/tables/step5_clean_columns_summary.json"
+  step6_physical_model_json: "results/tables/step6_coordinate_motion_summary.json"
+  step7_residual_summary_json: "results/tables/step7_residual_summary.json"
+  step7_normal_statistics_json: "results/tables/step7_normal_statistics.json"
+  step7_residual_normal_statistics_json: "results/tables/step7_residual_normal_statistics_summary.json"
+  step8_evidence_summary_json: "results/tables/step8_evidence_summary.json"
+  step8_energy_diagnostics_json: "results/tables/step8_energy_diagnostics.json"
+  step8_xi_scaler_json: "results/tables/step8_xi_scaler.json"
+  step8_xi_feature_spec_json: "results/tables/step8_xi_feature_spec.json"
+  step8_normal_statistics_validation_json: "results/tables/step8_normal_statistics_validation.json"
+  step9_dataset_objects_summary_json: "results/tables/step9_dataset_objects_summary.json"
+  step9_sequence_manifest_json: "results/tables/step9_sequence_manifest.json"
+  step9_flat_array_dir: "data/processed/flat_arrays"
+  threshold_selection_dir: "results/tables/threshold_selection"
+  step10_evaluation_framework_summary_json: "results/tables/step10_evaluation_framework_summary.json"
+  step11_model_factory_summary_json: "results/tables/step11_model_factory_summary.json"
+  step11_architecture_dir: "results/tables/model_architecture"
+  step12_training_history_csv: "results/tables/step12_training_history.csv"
+  step12_training_history_json: "results/tables/step12_training_history.json"
+  step12_training_summary_json: "results/tables/step12_training_summary.json"
+  step12_validation_predictions_npz: "results/tables/step12_validation_predictions.npz"
+  step13_proposed_experiment_summary_json: "results/tables/step13_proposed_experiment_summary.json"
+  proposed_threshold_selection_json: "results/tables/proposed_threshold_selection.json"
+  proposed_threshold_candidates_csv: "results/tables/proposed_threshold_candidates.csv"
+  dataset1_main_comparison_csv: "results/tables/dataset1_main_comparison.csv"
+  dataset1_proposed_summary_json: "results/tables/dataset1_proposed_summary.json"
+  dataset1_val_predictions_npz: "results/tables/dataset1_val_predictions.npz"
+  dataset1_test_predictions_npz: "results/tables/dataset1_test_predictions.npz"
+  dataset2_external_comparison_csv: "results/tables/dataset2_external_comparison.csv"
+  dataset2_proposed_summary_json: "results/tables/dataset2_proposed_summary.json"
+  dataset2_external_predictions_npz: "results/tables/dataset2_external_predictions.npz"
+  dataset3_online_case_study_csv: "results/tables/dataset3_online_case_study.csv"
+  dataset3_proposed_summary_json: "results/tables/dataset3_proposed_summary.json"
+  dataset3_online_predictions_npz: "results/tables/dataset3_online_predictions.npz"
+  # Step 14 full-model module-usage diagnostics
+  module_usage_figures_dir: "results/figures/module_usage"
+  # Step 15 baseline outputs
+  step15_baselines_summary_json: "results/tables/step15_baselines_summary.json"
+
+  baseline_threshold_selection_json: "results/tables/baseline_threshold_selection.json"
+  baseline_threshold_selection_csv: "results/tables/baseline_threshold_selection.csv"
+  baseline_threshold_candidates_csv: "results/tables/baseline_threshold_candidates.csv"
+
+  baseline_training_records_csv: "results/tables/baseline_training_records.csv"
+  baseline_prediction_records_csv: "results/tables/baseline_prediction_records.csv"
+  baselines_comparison_csv: "results/tables/baselines_comparison.csv"
+
+  step15_baseline_predictions_dir: "results/tables/baseline_predictions"
+
+
+  dataset3_online_predictions_csv: "results/tables/dataset3_online_predictions.csv"
+
+  dataset3_online_ekf_comparison_csv: "results/tables/dataset3_online_ekf_comparison.csv"
+  dataset3_online_ekf_comparison_summary_json: "results/tables/dataset3_online_ekf_comparison_summary.json"
+  dataset3_online_case_plot_source_csv: "results/tables/dataset3_online_case_study_plot_source.csv"
+
+  dataset3_case_study_figure_dir: "results/figures/dataset3_case_study"
+
+  # Used only if online_xi.csv does not contain EKF Detector.
+  dataset3_raw_csv: "data/raw/AV-GPS-Dataset-3.csv"
+
+  # Step 20 sensitivity analysis
+  sensitivity_results_csv: "results/tables/sensitivity_results.csv"
+  sensitivity_summary_json: "results/tables/sensitivity_summary.json"
+
+  sensitivity_models_dir: "results/models/sensitivity"
+  sensitivity_artifacts_dir: "results/tables/sensitivity"

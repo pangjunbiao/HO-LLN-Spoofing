@@ -1,0 +1,498 @@
+model:
+  name: "KirchhoffLiquidSpoofDetector"
+  task: "causal_time_step_binary_spoofing_detection"
+
+  input:
+    representation: "xi"
+    use_scaled_features: true
+
+    raw_xi_feature_columns:
+      - "xi_eta_east"
+      - "xi_eta_north"
+      - "xi_eta_dot_east"
+      - "xi_eta_dot_north"
+      - "xi_eta_ddot_east"
+      - "xi_eta_ddot_north"
+      - "xi_q"
+      - "xi_accum_log"
+      - "xi_nu"
+
+    scaled_xi_feature_columns:
+      - "xi_eta_east_scaled"
+      - "xi_eta_north_scaled"
+      - "xi_eta_dot_east_scaled"
+      - "xi_eta_dot_north_scaled"
+      - "xi_eta_ddot_east_scaled"
+      - "xi_eta_ddot_north_scaled"
+      - "xi_q_scaled"
+      - "xi_accum_log_scaled"
+      - "xi_nu"
+
+    recommended_model_input_columns:
+      - "xi_eta_east_scaled"
+      - "xi_eta_north_scaled"
+      - "xi_eta_dot_east_scaled"
+      - "xi_eta_dot_north_scaled"
+      - "xi_eta_ddot_east_scaled"
+      - "xi_eta_ddot_north_scaled"
+      - "xi_q_scaled"
+      - "xi_accum_log_scaled"
+      - "xi_nu"
+
+    input_dim: 9
+    label_column: "Data Type"
+    validity_column: "xi_nu"
+    segment_column: "segment_id"
+    order_column: "within_segment_index"
+    delta_t_column: "delta_t_seconds"
+
+    rules:
+      raw_shortcut_columns_allowed: false
+      use_clock_date_time_as_input: false
+      use_gps_mgrs_as_input: false
+      use_ekf_detector_as_input: false
+      use_same_xi_for_proposed_baselines_ablations: true
+      causal_history_only: true
+      reset_hidden_state_at_segment_start: true
+
+  xi_groups:
+    instantaneous_residual:
+      columns:
+        - "xi_eta_east_scaled"
+        - "xi_eta_north_scaled"
+        - "xi_q_scaled"
+      raw_columns:
+        - "xi_eta_east"
+        - "xi_eta_north"
+        - "xi_q"
+      dim: 3
+
+    residual_evolution:
+      columns:
+        - "xi_eta_dot_east_scaled"
+        - "xi_eta_dot_north_scaled"
+        - "xi_eta_ddot_east_scaled"
+        - "xi_eta_ddot_north_scaled"
+      raw_columns:
+        - "xi_eta_dot_east"
+        - "xi_eta_dot_north"
+        - "xi_eta_ddot_east"
+        - "xi_eta_ddot_north"
+      dim: 4
+
+    persistence:
+      columns:
+        - "xi_accum_log_scaled"
+        - "xi_nu"
+      raw_columns:
+        - "xi_accum_log"
+        - "xi_nu"
+      dim: 2
+
+  proposed:
+    model_type: "proposed"
+    hidden_dim: 64
+    module_state_dim: 32
+    dropout: 0.10
+
+    use_residual_evolution: true
+    use_weak_accumulation: true
+    use_kirchhoff_exchange: true
+    use_third_order: true
+    temporal_block: "liquid_second_order"
+
+    kirchhoff_high_order:
+      instantaneous_branch_dim: 32
+      evolution_branch_dim: 32
+      persistence_branch_dim: 32
+      conductance_hidden_dim: 32
+      fusion_dim: 64
+      symmetric_conductance: true
+      use_pairwise_exchange: true
+      use_third_order_product: true
+
+      # Strict pipeline mode.
+      # These make the proposed architecture depend structurally on
+      # Kirchhoff exchange and the third-order interaction.
+      use_exchange_residual_bottleneck: true
+      use_third_order_bottleneck: true
+      pairwise_bottleneck_scale: 0.15
+
+
+    liquid_second_order:
+      hidden_dim: 64
+      velocity_dim: 64
+      tau_h_min: 0.05
+      tau_h_max: 10.0
+      tau_v_min: 0.05
+      tau_v_max: 10.0
+      use_delta_t: true
+      reset_h0_at_segment_start: true
+      reset_v0_at_segment_start: true
+
+    gru:
+      hidden_dim: 64
+      num_layers: 1
+      bidirectional: false
+      dropout: 0.10
+
+    simple_first_order:
+      hidden_dim: 64
+      tau_min: 0.05
+      tau_max: 10.0
+
+    output_head:
+      input: "hidden_and_velocity"
+      hidden_dim: 64
+      use_layer_norm: false
+      activation: "sigmoid"
+
+  variants:
+    full:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+    no_residual_evolution:
+      model_type: "proposed"
+      use_residual_evolution: false
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+    no_weak_accumulation:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: false
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+    no_kirchhoff_exchange:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: false
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+    no_third_order:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: false
+      temporal_block: "liquid_second_order"
+
+    no_liquid_dynamics:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "identity"
+
+  ablations:
+    no_residual_evolution:
+      model_type: "proposed"
+      use_residual_evolution: false
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+    no_weak_accumulation:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: false
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+    no_kirchhoff_exchange:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: false
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+    no_third_order:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: false
+      temporal_block: "liquid_second_order"
+
+    no_liquid_dynamics:
+      model_type: "proposed"
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "identity"
+
+  # --------------------------------------------------------------------------
+  # Step 17 — Professor high-order comparison
+  #
+  # Question:
+  #   Feature high-order vs model high-order?
+  #
+  # Design:
+  #   H0: no feature high-order, no model high-order
+  #   H1: feature high-order only
+  #   H2: model high-order only
+  #   H3: feature high-order + model high-order
+  #
+  # Important:
+  #   - These variants are only for Step 17.
+  #   - They do not affect Full, Step 15 baselines, or Step 16 ablations.
+  #   - H0/H2 keep the same 9-dimensional input shape but mask engineered
+  #     feature high-order columns during model input.
+  # --------------------------------------------------------------------------
+  high_order_comparison:
+
+    H0_no_feature_no_model_high_order:
+      use_feature_high_order: false
+      feature_mask_mode: "low_order_only"
+
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: false
+      use_third_order: false
+      temporal_block: "gru"
+
+      kirchhoff_high_order:
+        use_exchange_residual_bottleneck: false
+        use_third_order_bottleneck: false
+
+    H1_feature_high_order_only:
+      use_feature_high_order: true
+      feature_mask_mode: "all"
+
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: false
+      use_third_order: false
+      temporal_block: "gru"
+
+      kirchhoff_high_order:
+        use_exchange_residual_bottleneck: false
+        use_third_order_bottleneck: false
+
+    H2_model_high_order_only:
+      use_feature_high_order: false
+      feature_mask_mode: "low_order_only"
+
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+      kirchhoff_high_order:
+        use_exchange_residual_bottleneck: true
+        use_third_order_bottleneck: true
+
+    H3_full_feature_model_high_order:
+      use_feature_high_order: true
+      feature_mask_mode: "all"
+
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+      kirchhoff_high_order:
+        use_exchange_residual_bottleneck: true
+        use_third_order_bottleneck: true
+
+
+  # --------------------------------------------------------------------------
+  # Step 17A — Feature-group intervention through the complete Proposed model
+  #
+  # Question:
+  #   Which engineered GNSS evidence features does the trained Proposed model
+  #   actually use to detect GPS spoofing?
+  #
+  # Protocol:
+  #   - Use the same official trained Proposed checkpoint.
+  #   - Do not retrain.
+  #   - Mask one xi feature group at evaluation time.
+  #   - Keep same 9-dimensional input shape.
+  # --------------------------------------------------------------------------
+  feature_group_intervention:
+
+    full_features:
+      display_name: "Full features"
+      use_feature_high_order: true
+      feature_mask_mode: "all"
+      masked_group: "none"
+      description: "Official Proposed model with all 9 xi features."
+
+    no_accum_log:
+      display_name: "no accumulation"
+      use_feature_high_order: true
+      feature_mask_mode: "no_accum_log"
+      masked_group: "accum_log"
+      description: "Masks weak evidence accumulation feature xi_accum_log."
+
+    no_residual_dynamics:
+      display_name: "no residual dynamics"
+      use_feature_high_order: true
+      feature_mask_mode: "no_eta_dot,no_eta_ddot"
+      masked_group: "eta_dot_plus_eta_ddot"
+      description: "Masks residual velocity and residual acceleration as one dynamic-evidence family."
+
+    no_dynamic_energy_evidence:
+      display_name: "no dynamic-energy evidence"
+      use_feature_high_order: true
+      feature_mask_mode: "no_eta_dot,no_eta_ddot,no_q"
+      masked_group: "eta_dot_plus_eta_ddot_plus_q"
+      description: "Masks residual derivatives and residual energy."
+
+    low_order_only:
+      display_name: "low-order only"
+      use_feature_high_order: false
+      feature_mask_mode: "low_order_only"
+      masked_group: "feature_high_order"
+      description: "Keeps residual position eta and xi_nu only; removes derivatives, acceleration, energy, and accumulation evidence."
+
+    nu_only:
+      display_name: "nu only"
+      use_feature_high_order: true
+      feature_mask_mode: "no_eta,no_eta_dot,no_eta_ddot,no_q,no_accum_log"
+      masked_group: "all_gnss_evidence"
+      description: "Keeps only validity indicator xi_nu; removes GNSS residual/evidence features."
+
+  # --------------------------------------------------------------------------
+  # Step 17B — Kirchhoff / model high-order structure comparison
+  #
+  # Question:
+  #   Given the same full xi feature evidence, why use Kirchhoff / high-order
+  #   model structure?
+  #
+  # Protocol:
+  #   - All variants use full xi features.
+  #   - K0/K1/K2 are trained fairly from scratch.
+  #   - K3 is the official Proposed model and should reuse proposed_best.pt
+  #     in the Step-17B runner.
+  # --------------------------------------------------------------------------
+  kirchhoff_structure_comparison:
+
+    K0_full_features_simple_model:
+      use_feature_high_order: true
+      feature_mask_mode: "all"
+
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: false
+      use_third_order: false
+      temporal_block: "gru"
+
+      kirchhoff_high_order:
+        use_exchange_residual_bottleneck: false
+        use_third_order_bottleneck: false
+
+    K1_full_features_kirchhoff_only:
+      use_feature_high_order: true
+      feature_mask_mode: "all"
+
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: false
+      temporal_block: "gru"
+
+      kirchhoff_high_order:
+        use_exchange_residual_bottleneck: false
+        use_third_order_bottleneck: false
+
+    K2_full_features_kirchhoff_third_order:
+      use_feature_high_order: true
+      feature_mask_mode: "all"
+
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "gru"
+
+      kirchhoff_high_order:
+        use_exchange_residual_bottleneck: true
+        use_third_order_bottleneck: true
+
+    K3_official_proposed:
+      use_feature_high_order: true
+      feature_mask_mode: "all"
+
+      use_residual_evolution: true
+      use_weak_accumulation: true
+      use_kirchhoff_exchange: true
+      use_third_order: true
+      temporal_block: "liquid_second_order"
+
+      kirchhoff_high_order:
+        use_exchange_residual_bottleneck: true
+        use_third_order_bottleneck: true
+
+
+  baselines:
+    use_same_xi_input: true
+    use_same_train_val_test_split: true
+    use_same_external_test: true
+
+    xgboost_xi:
+      enabled: true
+      input_type: "time_step_xi"
+      uses_sequence_context: false
+
+    mlp_xi:
+      enabled: true
+      input_type: "time_step_xi"
+      uses_sequence_context: false
+      hidden_dims: [128, 64]
+      dropout: 0.10
+
+    lstm_xi:
+      enabled: true
+      input_type: "sequence_xi"
+      uses_sequence_context: true
+      hidden_dim: 64
+      num_layers: 1
+      dropout: 0.10
+
+    gru_xi:
+      enabled: true
+      input_type: "sequence_xi"
+      uses_sequence_context: true
+      hidden_dim: 64
+      num_layers: 1
+      dropout: 0.10
+
+    causal_tcn_xi:
+      enabled: true
+      input_type: "sequence_xi"
+      uses_sequence_context: true
+      hidden_dim: 64
+      kernel_size: 3
+      num_layers: 4
+      dropout: 0.10
+
+  fairness_rules:
+    proposed_model_gets_same_xi_as_baselines: true
+    ablations_trained_from_scratch: true
+    baselines_tuned_on_validation_only: true
+    threshold_selected_on_validation_only: true
+    dataset2_external_never_tuned: true
+    dataset3_online_case_study_never_tuned: true
+    model_outputs_probabilities_only: true
+    threshold_not_inside_model: true
+    alarm_rule_not_inside_model: true
+    synthetic_step10_theta_not_final_model_threshold: true
